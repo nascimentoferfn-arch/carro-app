@@ -1,0 +1,18 @@
+{
+  "name": "Carro Compartilhado",
+  "short_name": "Carro",
+  "description": "Controle de uso de veículo compartilhado",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://fav.farm/🚗",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

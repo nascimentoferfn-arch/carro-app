@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#111111" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Carro" />
+  <title>Carro Compartilhado</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f5f3; --surface: #ffffff; --border: rgba(0,0,0,0.1);
+      --text: #111111; --muted: #666666; --hint: #999999;
+      --blue: #185FA5; --blue-bg: #e6f1fb;
+      --green: #2d6a0f; --green-bg: #eaf3de;
+      --amber: #7a4800; --amber-bg: #faeeda;
+      --red: #8b1f1f; --red-bg: #fcebeb;
+      --radius: 12px; --radius-sm: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111111; --surface: #1c1c1e; --border: rgba(255,255,255,0.1);
+        --text: #f0f0f0; --muted: #aaaaaa; --hint: #666666;
+        --blue: #5ba3e0; --blue-bg: #0c2d4a;
+        --green: #6abf3a; --green-bg: #1a3a0a;
+        --amber: #e8a030; --amber-bg: #3a2500;
+        --red: #e06060; --red-bg: #3a1010;
+      }
+    }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; -webkit-font-smoothing: antialiased; }
+    #root { height: 100%; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; background: var(--bg); }
+    .screen { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar { display: flex; align-items: center; gap: 10px; padding: 52px 16px 14px; background: var(--surface); border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
+    .topbar-back { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--blue); padding: 0 4px; line-height: 1; }
+    .topbar-info { flex: 1; }
+    .topbar-title { font-size: 17px; font-weight: 600; color: var(--text); }
+    .topbar-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .content { padding: 16px; padding-bottom: 32px; }
+    .card { background: var(--surface); border-radius: var(--radius); border: 0.5px solid var(--border); padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow); }
+    .card-tap { cursor: pointer; transition: opacity 0.15s; }
+    .card-tap:active { opacity: 0.7; }
+    .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+    .badge-blue { background: var(--blue-bg); color: var(--blue); }
+    .badge-green { background: var(--green-bg); color: var(--green); }
+    .badge-amber { background: var(--amber-bg); color: var(--amber); }
+    .badge-red { background: var(--red-bg); color: var(--red); }
+    .badge-gray { background: var(--bg); color: var(--muted); border: 0.5px solid var(--border); }
+    .btn { display: block; width: 100%; padding: 14px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); background: var(--surface); font-size: 15px; font-weight: 600; color: var(--text); cursor: pointer; text-align: center; transition: opacity 0.15s; }
+    .btn:active { opacity: 0.75; }
+    .btn + .btn { margin-top: 8px; }
+    .btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .btn-green { background: var(--green-bg); color: var(--green); border-color: transparent; }
+    .btn-red { background: var(--red-bg); color: var(--red); border-color: transparent; }
+    .btn-blue { background: var(--blue-bg); color: var(--blue); border-color: transparent; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.04em; }
+    .form-group { margin-bottom: 16px; }
+    input, select, textarea { width: 100%; padding: 11px 13px; border: 0.5px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-size: 15px; font-family: inherit; appearance: none; -webkit-appearance: none; outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+    .section-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 20px 0 10px; }
+    .nav-tabs { display: flex; background: var(--surface); border-bottom: 0.5px solid var(--border); }
+    .nav-tab { flex: 1; padding: 12px 4px; font-size: 13px; font-weight: 600; color: var(--muted); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+    .nav-tab.active { color: var(--text); border-bottom-color: var(--text); }
+    .checklist-item { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+    .checklist-item:last-child { border-bottom: none; }
+    .check-circle { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); background: none; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.15s; }
+    .check-circle.on { background: var(--green); border-color: var(--green); }
+    .check-text { font-size: 14px; flex: 1; }
+    .check-text.done { color: var(--muted); text-decoration: line-through; }
+    .photo-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 28px 16px; text-align: center; cursor: pointer; margin-bottom: 12px; transition: all 0.2s; background: var(--surface); }
+    .photo-zone.ok { border-style: solid; border-color: var(--green); background: var(--green-bg); }
+    .photo-zone-icon { font-size: 28px; margin-bottom: 6px; }
+    .photo-zone-label { font-size: 13px; color: var(--muted); }
+    .photo-zone.ok .photo-zone-label { color: var(--green); font-weight: 600; }
+    .photo-preview { width: 100%; border-radius: var(--radius-sm); margin-bottom: 6px; max-height: 180px; object-fit: cover; display: none; }
+    .car-hero { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 14px; border: 0.5px solid var(--border); }
+    .car-emoji { font-size: 36px; }
+    .empty { text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: 14px; }
+    .row { display: flex; align-items: center; gap: 10px; }
+    .row-between { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .metric { background: var(--surface); border-radius: var(--radius-sm); border: 0.5px solid var(--border); padding: 12px 14px; }
+    .metric-val { font-size: 22px; font-weight: 700; color: var(--text); }
+    .metric-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .spinner { text-align: center; padding: 2rem; color: var(--muted); font-size: 14px; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 100px; font-size: 13px; font-weight: 600; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+    .toast.show { opacity: 1; }
+    .config-box { background: var(--amber-bg); border: 0.5px solid var(--amber); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px; font-size: 13px; color: var(--amber); line-height: 1.6; }
+    .config-box strong { display: block; font-size: 14px; margin-bottom: 4px; }
+    .input-file { display: none; }
+    .progress { height: 4px; background: var(--blue-bg); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+    .progress-bar { height: 100%; background: var(--blue); border-radius: 2px; transition: width 0.3s; }
+    select option { background: var(--surface); color: var(--text); }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<div class="toast" id="toast"></div>
+<script type="module">
+// ============================================================
+// ⚙️  CONFIGURE AQUI — suas credenciais do Supabase
+// ============================================================
+const SUPABASE_URL = 'https://yuvamwfjzqvnsbxxrrof.supabase.co'
+const SUPABASE_ANON_KEY = 'sb_publishable_Ni5QYAOgKHyD2Ot9S-UfLQ_oXJjSgK_'
+// ============================================================
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+const isConfigured = !SUPABASE_URL.includes('SEU_PROJETO')
+
+// ── Helpers ──────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast')
+  el.textContent = msg; el.classList.add('show')
+  setTimeout(() => el.classList.remove('show'), 2800)
+}
+function fmtDate(d) {
+  return new Date(d + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })
+}
+function fmtDateLong(d) {
+  return new Date(d + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+}
+function today() { return new Date().toISOString().slice(0, 10) }
+function now() { return new Date().toISOString() }
+function statusBadge(s) {
+  const map = { confirmada: ['badge-blue','Reservado'], em_uso: ['badge-amber','Em uso'], concluida: ['badge-green','Concluído'], cancelada: ['badge-gray','Cancelado'] }
+  const [cls, label] = map[s] || ['badge-gray', s]
+  return `<span class="badge ${cls}">${label}</span>`
+}
+const CHECKLIST = ['Pneus sem avarias','Lataria sem novos danos','Vidros e espelhos OK','Documentos no veículo','Combustível verificado','Limpeza interna OK','Cinto de segurança OK','Extintor presente']
+const COMBUSTIVEIS = ['Tanque cheio ✅','3/4','Meio tanque','1/4','Reserva ⚠️']
+
+// ── State ─────────────────────────────────────────────────────
+let state = {
+  screen: 'login',
+  tab: 'hoje',
+  colaborador: null,
+  colaboradores: [],
+  reservas: [],
+  currentReserva: null,
+  currentRegistro: null,
+  checklistIn: {},
+  checklistOut: {},
+  fotosIn: {},
+  fotosOut: {},
+  loading: false
+}
+
+function setState(patch) { Object.assign(state, patch); render() }
+
+// ── Render ────────────────────────────────────────────────────
+function render() {
+  const root = document.getElementById('root')
+  const screens = { login, home, novaReserva, minhaReserva, checkin, checkout, resumo, historico, painel }
+  const fn = screens[state.screen]
+  root.innerHTML = fn ? fn() : ''
+  bindEvents()
+}
+
+// ── Tela: LOGIN ───────────────────────────────────────────────
+function login() {
+  return `
+  <div class="screen">
+    <div class="scroll">
+      <div class="content" style="padding-top: 60px;">
+        <div style="text-align:center; margin-bottom: 32px;">
+          <div style="font-size: 52px; margin-bottom: 12px;">🚗</div>
+          <div style="font-size: 22px; font-weight: 700;">Carro Compartilhado</div>
+          <div style="font-size: 13px; color: var(--muted); margin-top: 4px;">Fiat Argo 2024 · ABC-1234 · até dez/2026</div>
+        </div>
+        ${!isConfigured ? `<div class="config-box"><strong>⚙️ Configure o Supabase</strong>Abra o arquivo index.html e preencha SUPABASE_URL e SUPABASE_ANON_KEY com as credenciais do seu projeto.</div>` : ''}
+        <div class="form-group">
+          <label class="label">Quem é você?</label>
+          <select id="sel-colaborador">
+            <option value="">Selecione seu nome...</option>
+            ${state.colaboradores.map(c => `<option value="${c.id}" data-nome="${c.nome}">${c.nome} — ${c.cargo || ''}</option>`).join('')}
+          </select>
+        </div>
+        <button class="btn btn-primary" id="btn-entrar">Entrar →</button>
+        ${state.colaboradores.length === 0 ? `<div class="spinner">Carregando colaboradores...</div>` : ''}
+      </div>
+    </div>
+  </div>`
+}
+
+// ── Tela: HOME ────────────────────────────────────────────────
+function home() {
+  const hoje = state.reservas.filter(r => r.data === today() && r.status !== 'cancelada')
+  const proximas = state.reservas.filter(r => r.data > today() && r.status === 'confirmada').slice(0, 8)
+  const minhas = state.reservas.filter(r => r.colaborador_nome === state.colaborador.nome && ['confirmada','em_uso'].includes(r.status))
+
+  const listHoje = hoje.length === 0
+    ? `<div class="empty">Nenhuma reserva para hoje.</div>`
+    : hoje.map(r => `
+      <div class="card card-tap" data-id="${r.id}" data-action="verReserva">
+        <div class="row-between">
+          <div>
+            <div style="font-size: 14px; font-weight: 600;">${r.hora_saida.slice(0,5)} – ${r.hora_retorno.slice(0,5)}</div>
+            <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">${r.colaborador_nome}</div>
+            <div style="font-size: 12px; color: var(--hint); margin-top: 2px;">📍 ${r.destino}</div>
+          </div>
+          ${statusBadge(r.status)}
+        </div>
+      </div>`).join('')
+
+  const listProx = proximas.length === 0
+    ? `<div class="empty">Sem próximas reservas.</div>`
+    : proximas.map(r => `
+      <div class="card card-tap" data-id="${r.id}" data-action="verReserva">
+        <div class="row-between">
+          <div>
+            <div style="font-size: 13px; font-weight: 600;">${fmtDate(r.data)} · ${r.hora_saida.slice(0,5)}–${r.hora_retorno.slice(0,5)}</div>
+            <div style="font-size: 12px; color: var(--muted); margin-top: 3px;">${r.colaborador_nome} · ${r.destino}</div>
+          </div>
+          <span style="font-size: 20px; color: var(--hint);">›</span>
+        </div>
+      </div>`).join('')
+
+  const minhasAlert = minhas.length > 0
+    ? `<div class="card" style="border-color: var(--blue); background: var(--blue-bg); cursor: pointer;" data-id="${minhas[0].id}" data-action="verReserva">
+        <div class="row-between">
+          <div>
+            <div style="font-size:12px; font-weight:700; color:var(--blue); margin-bottom:3px;">SUA RESERVA ATIVA</div>
+            <div style="font-size:14px; font-weight:600; color:var(--text);">${minhas[0].hora_saida.slice(0,5)} – ${minhas[0].hora_retorno.slice(0,5)}</div>
+            <div style="font-size:12px; color:var(--muted);">${fmtDate(minhas[0].data)} · ${minhas[0].destino}</div>
+          </div>
+          ${statusBadge(minhas[0].status)}
+        </div>
+       </div>` : ''
+
+  return `
+  <div class="screen">
+    <div class="topbar">
+      <div class="topbar-info">
+        <div class="topbar-title">🚗 Carro Compartilhado</div>
+        <div class="topbar-sub">Olá, ${state.colaborador.nome.split(' ')[0]} 👋</div>
+      </div>
+      <button class="btn" style="width:auto; padding:7px 12px; font-size:12px;" data-action="irPainel">Painel</button>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab ${state.tab==='hoje'?'active':''}" data-tab="hoje">Hoje</button>
+      <button class="nav-tab ${state.tab==='semana'?'active':''}" data-tab="semana">Próximas</button>
+    </div>
+    <div class="scroll">
+      <div class="content">
+        ${minhasAlert}
+        ${state.tab === 'hoje' ? `
+          <div class="section-label">Agenda de hoje — ${new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long'})}</div>
+          ${listHoje}
+        ` : `
+          <div class="section-label">Próximas reservas</div>
+          ${listProx}
+        `}
+        <div style="margin-top: 20px;">
+          <button class="btn btn-primary" data-action="irReservar">+ Nova reserva</button>
+        </div>
+      </div>
+    </div>
+  </div>`
+}
+
+// ── Tela: NOVA RESERVA ────────────────────────────────────────
+function novaReserva() {
+  return `
+  <div class="screen">
+    <div class="topbar">
+      <button class="topbar-back" data-action="irHome">←</button>
+      <div class="topbar-info">
+        <div class="topbar-title">Nova reserva</div>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="content">
+        <div class="car-hero">
+          <div class="car-emoji">🚗</div>
+          <div>
+            <div style="font-size: 15px; font-weight: 600;">Fiat Argo 2024</div>
+            <div style="font-size: 12px; color: var(--muted);">Placa ABC-1234</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="label">Data</label>
+          <input type="date" id="res-data" min="${today()}" value="${today()}" />
+        </div>
+        <div class="grid2">
+          <div class="form-group">
+            <label class="label">Saída</label>
+            <input type="time" id="res-saida" value="08:00" />
+          </div>
+          <div class="form-group">
+            <label class="label">Retorno previsto</label>
+            <input type="time" id="res-retorno" value="17:00" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="label">Destino / Finalidade</label>
+          <input type="text" id="res-destino" placeholder="Ex: Obra Zona Norte — vistoria elétrica" />
+        </div>
+        <button class="btn btn-primary" id="btn-confirmar-reserva" ${state.loading ? 'disabled' : ''}>
+          ${state.loading ? 'Salvando...' : 'Confirmar reserva ✓'}
+        </button>
+      </div>
+    </div>
+  </div>`
+}
+
+// ── Tela: MINHA RESERVA ───────────────────────────────────────
+function minhaReserva() {
+  const r = state.currentReserva
+  if (!r) return `<div class="spinner">Carregando...</div>`
+  const isMinha = r.colaborador_nome === state.colaborador.nome
+  let actions = ''
+  if (r.status === 'confirmada' && isMinha) {
+    actions = `
+      <button class="btn btn-green" data-action="irCheckin">📋 Fazer check-in — Retirar carro</button>
+      <button class="btn btn-red" data-action="cancelarReserva">Cancelar reserva</button>`
+  } else if (r.status === 'em_uso' && isMinha) {
+    actions = `<button class="btn btn-primary" data-action="irCheckout">🔁 Fazer check-out — Devolver carro</button>`
+  } else if (r.status === 'concluida') {
+    const reg = state.currentRegistro
+    actions = `
+      <div class="grid2" style="margin-bottom:0;">
+        <div class="metric"><div class="metric-val">${reg?.km_rodados ?? '—'} km</div><div class="metric-lbl">Km rodados</div></div>
+        <div class="metric"><div class="metric-val" style="font-size:15px;">${reg?.combustivel ?? '—'}</div><div class="metric-lbl">Combustível</div></div>
+      </div>
+      <div style="margin-top:10px;">
+        ${reg?.foto_hodometro_saida ? `<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">📷 Fotos registradas</div>
+          <div class="grid2">
+            <img src="${reg.foto_hodometro_saida}" style="width:100%;border-radius:8px;height:80px;object-fit:cover;" />
+            <img src="${reg.foto_hodometro_retorno||reg.foto_hodometro_saida}" style="width:100%;border-radius:8px;height:80px;object-fit:cover;" />
+          </div>` : ''}
+      </div>`
+  }
+  return `
+  <div class="screen">
+    <div class="topbar">
+      <button class="topbar-back" data-action="irHome">←</button>
+      <div class="topbar-info">
+        <div class="topbar-title">Reserva</div>
+        <div class="topbar-sub">${fmtDate(r.data)}</div>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="content">
+        <div class="car-hero">
+          <div class="car-emoji">🚗</div>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:600;">Fiat Argo 2024 · ABC-1234</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">${statusBadge(r.status)}</div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-size:16px;font-weight:600;margin-bottom:8px;">${r.colaborador_nome}</div>
+          <div style="font-size:14px;color:var(--muted);">📅 ${fmtDateLong(r.data)}</div>
+          <div style="font-size:14px;color:var(--muted);margin-top:6px;">🕐 ${r.hora_saida.slice(0,5)} – ${r.hora_retorno.slice(0,5)}</div>
+          <div style="font-size:14px;color:var(--muted);margin-top:6px;">📍 ${r.destino}</div>
+        </div>
+        ${actions}
+      </div>
+    </div>
+  </div>`
+}
+
+// ── Tela: CHECK-IN ────────────────────────────────────────────
+function checkin() {
+  const cl = Object.values(state.checklistIn).filter(Boolean).length
+  const pct = Math.round((cl / CHECKLIST.length) * 100)
+  return `
+  <div class="screen">
+    <div class="topbar">
+      <button class="topbar-back" data-action="irMinha">←</button>
+      <div class="topbar-info">
+        <div class="topbar-title">Check-in — Retirada</div>
+        <div class="topbar-sub">${cl}/${CHECKLIST.length} itens verificados</div>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="content">
+        <div class="progress"><div class="progress-bar" style="width:${pct}%"></div></div>
+
+        <div class="section-label">📷 Foto do hodômetro</div>
+        <div class="photo-zone ${state.fotosIn.hodo ? 'ok' : ''}" id="pz-hodo-in">
+          <input type="file" accept="image/*" capture="environment" class="input-file" id="file-hodo-in" />
+          <img id="prev-hodo-in" class="photo-preview" />
+          <div class="photo-zone-icon">${state.fotosIn.hodo ? '✅' : '📷'}</div>
+          <div class="photo-zone-label">${state.fotosIn.hodo ? 'Foto do hodômetro registrada' : 'Toque para fotografar o hodômetro'}</div>
+        </div>
+        <div class="form-group">
+          <label class="label">Km atual (hodômetro)</label>
+          <input type="number" id="ci-km" placeholder="Ex: 45200" value="${state.kmIn || ''}" inputmode="numeric" />
+        </div>
+
+        <div class="section-label">📷 Foto frontal do veículo</div>
+        <div class="photo-zone ${state.fotosIn.frente ? 'ok' : ''}" id="pz-frente-in">
+          <input type="file" accept="image/*" capture="environment" class="input-file" id="file-frente-in" />
+          <img id="prev-frente-in" class="photo-preview" />
+          <div class="photo-zone-icon">${state.fotosIn.frente ? '✅' : '📷'}</div>
+          <div class="photo-zone-label">${state.fotosIn.frente ? 'Foto do veículo registrada' : 'Toque para fotografar o veículo'}</div>
+        </div>
+
+        <div class="section-label">✅ Checklist de vistoria</div>
+        <div class="card" style="padding: 0;">
+          ${CHECKLIST.map((item, i) => `
+            <div class="checklist-item" data-check="${i}" data-list="in">
+              <div class="check-circle ${state.checklistIn[i] ? 'on' : ''}">
+                ${state.checklistIn[i] ? '<span style="color:#fff;font-size:13px;">✓</span>' : ''}
+              </div>
+              <span class="check-text ${state.checklistIn[i] ? 'done' : ''}">${item}</span>
+            </div>`).join('')}
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+          <label class="label">Observações (danos pré-existentes)</label>
+          <textarea id="ci-obs" rows="3" placeholder="Descreva qualquer dano já existente no veículo...">${state.obsIn || ''}</textarea>
+        </div>
+
+        <button class="btn btn-green" id="btn-confirmar-checkin" ${state.loading ? 'disabled' : ''}>
+          ${state.loading ? 'Registrando...' : '✅ Confirmar check-in e retirar carro'}
+        </button>
+      </div>
+    </div>
+  </div>`
+}
+
+// ── Tela: CHECK-OUT ───────────────────────────────────────────
+function checkout() {
+  const cl = Object.values(state.checklistOut).filter(Boolean).length
+  const pct = Math.round((cl / CHECKLIST.length) * 100)
+  return `
+  <div class="screen">
+    <div class="topbar">
+      <button class="topbar-back" data-action="irMinha">←</button>
+      <div class="topbar-info">
+        <div class="topbar-title">Check-out — Devolução</div>
+        <div class="topbar-sub">${cl}/${CHECKLIST.length} itens verificados</div>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="content">
+        <div class="progress"><div class="progress-bar" style="width:${pct}%"></div></div>
+
+        <div class="section-label">📷 Foto do hodômetro (retorno)</div>
+        <div class="photo-zone ${state.fotosOut.hodo ? 'ok' : ''}" id="pz-hodo-out">
+          <input type="file" accept="image/*" capture="environment" class="input-file" id="file-hodo-out" />
+          <img id="prev-hodo-out" class="photo-preview" />
+          <div class="photo-zone-icon">${state.fotosOut.hodo ? '✅' : '📷'}</div>
+          <div class="photo-zone-label">${state.fotosOut.hodo ? 'Foto do hodômetro registrada' : 'Toque para fotografar o hodômetro'}</div>
+        </div>
+        <div class="form-group">
+          <label class="label">Km retorno</label>
+          <input type="number" id="co-km" placeholder="Ex: 45480" value="${state.kmOut || ''}" inputmode="numeric" />
+        </div>
+
+        <div class="section-label">📷 Foto do veículo (retorno)</div>
+        <div class="photo-zone ${state.fotosOut.frente ? 'ok' : ''}" id="pz-frente-out">
+          <input type="file" accept="image/*" capture="environment" class="input-file" id="file-frente-out" />
+          <img id="prev-frente-out" class="photo-preview" />
+          <div class="photo-zone-icon">${state.fotosOut.frente ? '✅' : '📷'}</div>
+          <div class="photo-zone-label">${state.fotosOut.frente ? 'Foto do veículo registrada' : 'Toque para fotografar o veículo'}</div>
+        </div>
+
+        <div class="section-label">✅ Checklist de devolução</div>
+        <div class="card" style="padding: 0;">
+          ${CHECKLIST.map((item, i) => `
+            <div class="checklist-item" data-check="${i}" data-list="out">
+              <div class="check-circle ${state.checklistOut[i] ? 'on' : ''}">
+                ${state.checklistOut[i] ? '<span style="color:#fff;font-size:13px;">✓</span>' : ''}
+              </div>
+              <span class="check-text ${state.checklistOut[i] ? 'done' : ''}">${item}</span>
+            </div>`).join('')}
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+          <label class="label">Nível de combustível</label>
+          <select id="co-combustivel">
+            ${COMBUSTIVEIS.map(c => `<option ${c === state.combustivel ? 'selected' : ''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="label">Observações</label>
+          <textarea id="co-obs" rows="3" placeholder="Danos novos, problemas mecânicos...">${state.obsOut || ''}</textarea>
+        </div>
+
+        <button class="btn btn-primary" id="btn-confirmar-checkout" ${state.loading ? 'disabled' : ''}>
+          ${state.loading ? 'Registrando...' : '🔁 Confirmar devolução'}
+        </button>
+      </div>
+    </div>
+  </div>`
+}
+
+// ── Tela: RESUMO ──────────────────────────────────────────────
+function resumo() {
+  const r = state.currentRegistro
+  return `
+  <div class="screen">
+    <div class="topbar">
+      <div class="topbar-info">
+        <div class="topbar-title">Devolução confirmada</div>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="content" style="text-align:center; padding-top: 40px;">
+        <div style="font-size: 64px; margin-bottom: 16px;">✅</div>
+        <div style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Tudo registrado!</div>
+        <div style="font-size: 14px; color: var(--muted); margin-bottom: 32px;">Obrigado por usar o checklist corretamente.</div>
+        <div class="grid2" style="margin-bottom: 12px; text-align:left;">
+          <div class="metric">
+            <div class="metric-val">${r?.km_rodados ?? '—'} km</div>
+            <div class="metric-lbl">Km rodados</div>
+          </div>
+          <div class="metric">
+            <div class="metric-val" style="font-size:15px;">${r?.combustivel ?? '—'}</div>
+            <div class="metric-lbl">Combustível</div>
+          </div>
+        </div>
+        ${r?.foto_hodometro_saida ? `<div class="grid2"><img src="${r.foto_hodometro_saida}" style="width:100%;border-radius:8px;height:90px;object-fit:cover;" /><img src="${r.foto_hodometro_retorno||r.foto_hodometro_saida}" style="width:100%;border-radius:8px;height:90px;object-fit:cover;" /></div>` : ''}
+        <button class="btn btn-primary" style="margin-top:24px;" data-action="irHome">Voltar ao início</button>
+      </div>
+    </div>
+  </div>`
+}
+
+// ── Tela: HISTÓRICO ───────────────────────────────────────────
+function historico() {
+  const lista = state.reservas.filter(r => r.status === 'concluida').reverse()
+  return `
+  <div class="screen">
+    <div class="topbar">
+      <button class="topbar-back" data-action="irHome">←</button>
+      <div class="topbar-info"><div class="topbar-title">Histórico completo</div></div>
+    </div>
+    <div class="scroll">
+      <div class="content">
+        ${lista.length === 0 ? '<div class="empty">Nenhum uso concluído ainda.</div>' :
+          lista.map(r => `
+          <div class="card card-tap" data-id="${r.id}" data-action="verReserva">
+            <div class="row-between" style="margin-bottom:4px;">
+              <span style="font-size:14px;font-weight:600;">${r.colaborador_nome}</span>
+              ${statusBadge(r.status)}
+            </div>
+            <div style="font-size:12px;color:var(--muted);">${fmtDate(r.data)} · ${r.hora_saida.slice(0,5)}–${r.hora_retorno.slice(0,5)}</div>
+            <div style="font-size:12px;color:var(--hint);">📍 ${r.destino}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`
+}
+
+// ── Tela: PAINEL ─────────────────────────────────────────────
+function painel() {
+  const concluidas = state.reservas.filter(r => r.status === 'concluida')
+  const totalKm = concluidas.reduce((s, r) => s + (r.km_rodados || 0), 0)
+  const usosPorPessoa = {}
+  state.reservas.forEach(r => {
+    if (!usosPorPessoa[r.colaborador_nome]) usosPorPessoa[r.colaborador_nome] = 0
+    if (r.status !== 'cancelada') usosPorPessoa[r.colaborador_nome]++
+  })
+  const ranking = Object.entries(usosPorPessoa).sort((a,b) => b[1]-a[1])
+  return `
+  <div class="screen">
+    <div class="topbar">
+      <button class="topbar-back" data-action="irHome">←</button>
+      <div class="topbar-info"><div class="topbar-title">Painel do gestor</div></div>
+    </div>
+    <div class="scroll">
+      <div class="content">
+        <div class="grid2" style="margin-bottom:16px;">
+          <div class="metric"><div class="metric-val">${state.reservas.filter(r=>r.status!=='cancelada').length}</div><div class="metric-lbl">Total de reservas</div></div>
+          <div class="metric"><div class="metric-val">${totalKm.toLocaleString('pt-BR')}</div><div class="metric-lbl">Km totais</div></div>
+          <div class="metric"><div class="metric-val">${state.reservas.filter(r=>r.status==='em_uso').length}</div><div class="metric-lbl">Em uso agora</div></div>
+          <div class="metric"><div class="metric-val">${concluidas.length}</div><div class="metric-lbl">Viagens concluídas</div></div>
+        </div>
+        <div class="section-label">Usos por colaborador</div>
+        ${ranking.map(([nome, qtd]) => `
+          <div class="card">
+            <div class="row-between">
+              <div style="font-size:14px;font-weight:500;">${nome}</div>
+              <div style="font-size:14px;font-weight:700;color:var(--blue);">${qtd} uso${qtd !== 1 ? 's' : ''}</div>
+            </div>
+          </div>`).join('')}
+        <div class="section-label">Últimas viagens com km</div>
+        ${concluidas.slice().reverse().slice(0,10).map(r => `
+          <div class="card">
+            <div class="row-between">
+              <div>
+                <div style="font-size:13px;font-weight:600;">${r.colaborador_nome}</div>
+                <div style="font-size:12px;color:var(--muted);">${fmtDate(r.data)} · ${r.destino}</div>
+              </div>
+              <div style="font-size:14px;font-weight:700;">${r.km_rodados ? r.km_rodados + ' km' : '—'}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`
+}
+
+// ── Upload de foto ────────────────────────────────────────────
+async function uploadFoto(file, path) {
+  const { data, error } = await sb.storage.from('fotos-veiculo').upload(path, file, { upsert: true })
+  if (error) throw error
+  const { data: pub } = sb.storage.from('fotos-veiculo').getPublicUrl(path)
+  return pub.publicUrl
+}
+
+// ── API calls ─────────────────────────────────────────────────
+async function carregarColaboradores() {
+  if (!isConfigured) return
+  const { data } = await sb.from('colaboradores').select('*').eq('ativo', true).order('nome')
+  if (data) setState({ colaboradores: data })
+}
+
+async function carregarReservas() {
+  if (!isConfigured) return
+  const { data } = await sb.from('reservas').select('*').order('data').order('hora_saida')
+  if (data) setState({ reservas: data })
+}
+
+async function carregarRegistro(reservaId) {
+  if (!isConfigured) return
+  const { data } = await sb.from('registros_uso').select('*').eq('reserva_id', reservaId).maybeSingle()
+  if (data) setState({ currentRegistro: data })
+}
+
+// ── Bind Events ───────────────────────────────────────────────
+function bindEvents() {
+  // Login
+  const btnEntrar = document.getElementById('btn-entrar')
+  if (btnEntrar) btnEntrar.onclick = () => {
+    const sel = document.getElementById('sel-colaborador')
+    const opt = sel.options[sel.selectedIndex]
+    if (!sel.value) { toast('Selecione seu nome'); return }
+    const colab = state.colaboradores.find(c => c.id === sel.value)
+    if (!colab) return
+    setState({ colaborador: colab, screen: 'home' })
+    carregarReservas()
+  }
+
+  // Nova reserva
+  const btnRes = document.getElementById('btn-confirmar-reserva')
+  if (btnRes) btnRes.onclick = async () => {
+    const data = document.getElementById('res-data').value
+    const saida = document.getElementById('res-saida').value
+    const retorno = document.getElementById('res-retorno').value
+    const destino = document.getElementById('res-destino').value.trim()
+    if (!data || !saida || !retorno || !destino) { toast('Preencha todos os campos'); return }
+    if (saida >= retorno) { toast('Horário de retorno deve ser após a saída'); return }
+    setState({ loading: true })
+    const nova = { colaborador_id: state.colaborador.id, colaborador_nome: state.colaborador.nome, data, hora_saida: saida, hora_retorno: retorno, destino, status: 'confirmada' }
+    if (isConfigured) {
+      const { data: res, error } = await sb.from('reservas').insert(nova).select().single()
+      if (error) { toast('Erro ao salvar: ' + error.message); setState({ loading: false }); return }
+      await carregarReservas()
+      setState({ loading: false, screen: 'minhaReserva', currentReserva: res })
+    } else {
+      const fake = { ...nova, id: Date.now().toString(), km_rodados: null }
+      state.reservas.push(fake)
+      setState({ loading: false, screen: 'minhaReserva', currentReserva: fake })
+    }
+    toast('Reserva confirmada!')
+  }
+
+  // Check-in
+  const btnCI = document.getElementById('btn-confirmar-checkin')
+  if (btnCI) btnCI.onclick = async () => {
+    const km = parseInt(document.getElementById('ci-km').value)
+    const obs = document.getElementById('ci-obs').value
+    if (!km) { toast('Informe o km do hodômetro'); return }
+    const checked = Object.values(state.checklistIn).filter(Boolean).length
+    if (checked < 5) { toast(`Marque pelo menos 5 itens (${checked}/8 marcados)`); return }
+    setState({ loading: true, kmIn: km, obsIn: obs })
+    try {
+      let urlHodo = null, urlFrente = null
+      if (isConfigured) {
+        const ts = Date.now()
+        if (state.fotosIn._fileHodo) urlHodo = await uploadFoto(state.fotosIn._fileHodo, `${state.currentReserva.id}/hodo-in-${ts}.jpg`)
+        if (state.fotosIn._fileFrente) urlFrente = await uploadFoto(state.fotosIn._fileFrente, `${state.currentReserva.id}/frente-in-${ts}.jpg`)
+        const reg = { reserva_id: state.currentReserva.id, colaborador_nome: state.colaborador.nome, checkin_at: now(), km_saida: km, foto_hodometro_saida: urlHodo, foto_veiculo_saida: urlFrente, checklist_saida: state.checklistIn, obs_saida: obs }
+        const { error: re } = await sb.from('registros_uso').insert(reg)
+        if (re) throw re
+        await sb.from('reservas').update({ status: 'em_uso' }).eq('id', state.currentReserva.id)
+        await carregarReservas()
+      }
+      const updated = { ...state.currentReserva, status: 'em_uso' }
+      setState({ loading: false, screen: 'minhaReserva', currentReserva: updated })
+      toast('Check-in realizado! Boa viagem 🚗')
+    } catch (e) { toast('Erro: ' + e.message); setState({ loading: false }) }
+  }
+
+  // Check-out
+  const btnCO = document.getElementById('btn-confirmar-checkout')
+  if (btnCO) btnCO.onclick = async () => {
+    const km = parseInt(document.getElementById('co-km').value)
+    const comb = document.getElementById('co-combustivel').value
+    const obs = document.getElementById('co-obs').value
+    if (!km) { toast('Informe o km de retorno'); return }
+    const checked = Object.values(state.checklistOut).filter(Boolean).length
+    if (checked < 5) { toast(`Marque pelo menos 5 itens (${checked}/8 marcados)`); return }
+    setState({ loading: true, kmOut: km, combustivel: comb, obsOut: obs })
+    try {
+      let urlHodo = null, urlFrente = null
+      if (isConfigured) {
+        const ts = Date.now()
+        if (state.fotosOut._fileHodo) urlHodo = await uploadFoto(state.fotosOut._fileHodo, `${state.currentReserva.id}/hodo-out-${ts}.jpg`)
+        if (state.fotosOut._fileFrente) urlFrente = await uploadFoto(state.fotosOut._fileFrente, `${state.currentReserva.id}/frente-out-${ts}.jpg`)
+        const { data: reg } = await sb.from('registros_uso').select('id').eq('reserva_id', state.currentReserva.id).maybeSingle()
+        const update = { checkout_at: now(), km_retorno: km, foto_hodometro_retorno: urlHodo, foto_veiculo_retorno: urlFrente, checklist_retorno: state.checklistOut, combustivel: comb, obs_retorno: obs }
+        if (reg) await sb.from('registros_uso').update(update).eq('id', reg.id)
+        await sb.from('reservas').update({ status: 'concluida' }).eq('id', state.currentReserva.id)
+        const { data: regFull } = await sb.from('registros_uso').select('*').eq('reserva_id', state.currentReserva.id).maybeSingle()
+        await carregarReservas()
+        setState({ loading: false, screen: 'resumo', currentRegistro: regFull })
+      } else {
+        const fakeReg = { km_rodados: km - (state.kmIn || 0), combustivel: comb }
+        setState({ loading: false, screen: 'resumo', currentRegistro: fakeReg })
+      }
+      toast('Devolução registrada!')
+    } catch (e) { toast('Erro: ' + e.message); setState({ loading: false }) }
+  }
+
+  // Checklist clicks
+  document.querySelectorAll('[data-check]').forEach(el => {
+    el.onclick = () => {
+      const i = parseInt(el.dataset.check)
+      const list = el.dataset.list
+      if (list === 'in') { state.checklistIn[i] = !state.checklistIn[i]; setState({}) }
+      else { state.checklistOut[i] = !state.checklistOut[i]; setState({}) }
+    }
+  })
+
+  // Fotos — click nas zonas abre o file input
+  const bindPhoto = (zoneId, fileId, prevId, key, store) => {
+    const zone = document.getElementById(zoneId)
+    const fileIn = document.getElementById(fileId)
+    if (!zone || !fileIn) return
+    zone.onclick = () => fileIn.click()
+    fileIn.onchange = (e) => {
+      const file = e.target.files[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const prev = document.getElementById(prevId)
+        if (prev) { prev.src = ev.target.result; prev.style.display = 'block' }
+        store[key] = true
+        store['_file' + (key === 'hodo' ? 'Hodo' : 'Frente')] = file
+        zone.classList.add('ok')
+        zone.querySelector('.photo-zone-icon').textContent = '✅'
+        zone.querySelector('.photo-zone-label').textContent = 'Foto registrada'
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+  bindPhoto('pz-hodo-in', 'file-hodo-in', 'prev-hodo-in', 'hodo', state.fotosIn)
+  bindPhoto('pz-frente-in', 'file-frente-in', 'prev-frente-in', 'frente', state.fotosIn)
+  bindPhoto('pz-hodo-out', 'file-hodo-out', 'prev-hodo-out', 'hodo', state.fotosOut)
+  bindPhoto('pz-frente-out', 'file-frente-out', 'prev-frente-out', 'frente', state.fotosOut)
+
+  // Ações via data-action
+  document.querySelectorAll('[data-action]').forEach(el => {
+    el.onclick = async (e) => {
+      const action = el.dataset.action
+      if (action === 'irHome') setState({ screen: 'home' })
+      else if (action === 'irReservar') setState({ screen: 'novaReserva' })
+      else if (action === 'irCheckin') { state.checklistIn = {}; state.fotosIn = {}; setState({ screen: 'checkin' }) }
+      else if (action === 'irCheckout') { state.checklistOut = {}; state.fotosOut = {}; setState({ screen: 'checkout' }) }
+      else if (action === 'irMinha') setState({ screen: 'minhaReserva' })
+      else if (action === 'irPainel') setState({ screen: 'painel' })
+      else if (action === 'verReserva') {
+        const id = el.dataset.id
+        const r = state.reservas.find(x => x.id === id)
+        if (r) {
+          setState({ currentReserva: r, currentRegistro: null, screen: 'minhaReserva' })
+          await carregarRegistro(id)
+        }
+      }
+      else if (action === 'cancelarReserva') {
+        if (!confirm('Cancelar esta reserva?')) return
+        if (isConfigured) await sb.from('reservas').update({ status: 'cancelada' }).eq('id', state.currentReserva.id)
+        await carregarReservas()
+        setState({ screen: 'home' })
+        toast('Reserva cancelada')
+      }
+    }
+  })
+
+  // Tabs home
+  document.querySelectorAll('[data-tab]').forEach(el => {
+    el.onclick = () => setState({ tab: el.dataset.tab })
+  })
+}
+
+// ── Init ──────────────────────────────────────────────────────
+render()
+carregarColaboradores()
+</script>
+</body>
+</html>
